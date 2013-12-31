@@ -7,7 +7,7 @@ begin;
   fields and another one with the data types.
 
 */
-create or replace function public.gs__create_temp_table(
+create or replace function public.gs__createtemptable(
   _field_name varchar(100)[],
   _field_type varchar(100)[]
 ) returns char(42) as
@@ -35,12 +35,13 @@ end;
 $$
 language plpgsql;
 
+
 /*
 
   Clears the content of a temporary table (delete from).
 
 */
-create or replace function public.gs__clear_temp_table(
+create or replace function public.gs__cleartemptable(
   _name char(42)
 ) returns void as
 $$
@@ -58,7 +59,7 @@ language plpgsql;
   Drops a temporary table.
 
 */
-create or replace function public.gs__drop_temp_table(
+create or replace function public.gs__droptemptable(
   _name char(42)
 ) returns void as
 $$

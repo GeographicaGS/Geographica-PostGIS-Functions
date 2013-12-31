@@ -7,6 +7,8 @@
   Identifies dangles nodes.
   Returns the points.
 
+  TODO: use the temp table library.
+
 */
 create or replace function public.gs__dangle_nodes(
   _lines geometry[]
@@ -33,6 +35,8 @@ language plpgsql;
 
   Identifies dangle nodes.
   Returns a table.
+
+  TODO: use the temp table library.
 
 */
 create or replace function public.gs__dangle_nodes_table(
