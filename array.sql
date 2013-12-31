@@ -246,11 +246,65 @@ create or replace function gs__insertsubarray(
   _index integer
 ) returns integer[] as
 $$
+begin
+  _array = _array[1:_index-1] || _subarray || _array[_index:array_length(_array,1)];
+  return _array;
+end;
+$$
+language plpgsql;
+
+/*
+
+  Returns all indices where an element is in a array. (integer
+  variant).
+
+*/
+create or replace function gs__elementindices(
+  _array integer[],
+  _element integer
+) returns integer[] as
+$$
 declare
+  _i integer;
   _o integer[];
 begin
-  _o = _array[1:_index-1] || _subarray || _array[_index:array_length(_array,1)];
+  _o = array[]::integer[];
+
+  for _i in 1..array_length(_array,1) loop
+    if _array[_i]=_element then
+      _o = _o || _i;
+    end if;
+  end loop;
+
   return _o;
+end;
+$$
+language plpgsql;
+
+/*
+
+  Inserts a subarray within an array in multiple positions. (integer
+  variant).
+
+*/
+create or replace function gs__insertsubarraymulti(
+  _array integer[],
+  _subarray integer[],
+  _indices integer[]
+) returns integer[] as
+$$
+declare
+  _i integer;
+  _offset integer;
+begin
+  for _i in 1..array_length(_indices,1) loop
+    _offset = (_i-1)*array_length(_subarray,1);
+  
+    _array = _array[1:_indices[_i]-1+_offset] || _subarray || 
+             _array[_indices[_i]+_offset:array_length(_array,1)+_offset];
+  end loop;
+
+  return _array;
 end;
 $$
 language plpgsql;
