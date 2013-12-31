@@ -307,7 +307,7 @@ begin
   return _array;
 end;
 $$
-language plpgsql;
+  language plpgsql;
 
 
 commit;
