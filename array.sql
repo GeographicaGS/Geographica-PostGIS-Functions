@@ -99,7 +99,7 @@ language plpgsql;
 /*
 
   Returns the indexes of the first common element shared between
-  varchar variables.
+  varchar arrays.
 
 
   TODO: revise this, try with loops.
@@ -233,5 +233,27 @@ begin
 end;
 $$
 language plpgsql;
+
+/*
+
+  Inserts a subarray within an array in a given position. (integer
+  variant).
+
+*/
+create or replace function gs__insertsubarray(
+  _array integer[],
+  _subarray integer[],
+  _index integer
+) returns integer[] as
+$$
+declare
+  _o integer[];
+begin
+  _o = _array[1:_index-1] || _subarray || _array[_index:array_length(_array,1)];
+  return _o;
+end;
+$$
+language plpgsql;
+
 
 commit;
