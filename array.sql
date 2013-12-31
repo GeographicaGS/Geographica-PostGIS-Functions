@@ -297,17 +297,19 @@ declare
   _i integer;
   _offset integer;
 begin
-  for _i in 1..array_length(_indices,1) loop
-    _offset = (_i-1)*array_length(_subarray,1);
-  
-    _array = _array[1:_indices[_i]-1+_offset] || _subarray || 
-             _array[_indices[_i]+_offset:array_length(_array,1)+_offset];
-  end loop;
+  if _indices<>array[]::integer[] then
+    for _i in 1..array_length(_indices,1) loop
+      _offset = (_i-1)*array_length(_subarray,1);
+    
+      _array = _array[1:_indices[_i]-1+_offset] || _subarray || 
+               _array[_indices[_i]+_offset:array_length(_array,1)+_offset];
+    end loop;
+  end if;
 
   return _array;
 end;
 $$
-  language plpgsql;
+language plpgsql;
 
 
 commit;
