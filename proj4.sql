@@ -1,4 +1,4 @@
-\set ntv2_grid PENR2009-20130723.gsb
+\set ntv2_grid PENR2009.gsb
 
 begin;
 
