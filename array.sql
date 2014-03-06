@@ -341,5 +341,31 @@ end;
 $$
 language plpgsql;
 
+/*
+
+  Returns an array with repeated elements deleted. varchar variant.
+
+*/
+create or replace function public.gs__uniquearray(
+  _a varchar[]
+) returns varchar[] as
+$$
+declare
+  _out varchar[];
+  _s varchar;
+begin
+  _out = array[]::varchar[];
+
+  foreach _s in array _a loop
+    if not array[_s]::varchar[] <@ _out then
+      _out = _out || _s;
+    end if;
+  end loop;
+
+  return _out;
+end;
+$$
+language plpgsql;
+
 
 commit;
