@@ -367,5 +367,31 @@ end;
 $$
 language plpgsql;
 
+/*
+
+  Returns an array with repeated elements deleted. integer variant.
+
+*/
+create or replace function public.gs__uniquearray(
+  _a integer[]
+) returns integer[] as
+$$
+declare
+  _out integer[];
+  _s integer;
+begin
+  _out = array[]::integer[];
+
+  foreach _s in array _a loop
+    if not array[_s]::integer[] <@ _out then
+      _out = _out || _s;
+    end if;
+  end loop;
+
+  return _out;
+end;
+$$
+language plpgsql;
+
 
 commit;
