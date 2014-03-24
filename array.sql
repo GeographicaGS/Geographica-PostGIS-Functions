@@ -380,6 +380,10 @@ declare
   _out integer[];
   _s integer;
 begin
+  if _a is null then
+    return null;
+  end if;
+
   _out = array[]::integer[];
 
   foreach _s in array _a loop
