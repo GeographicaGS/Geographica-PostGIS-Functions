@@ -1,46 +1,10 @@
-\set ntv2_grid PENR2009.gsb
+/* 
 
-begin;
+  Proj.4 test.
 
-/*
-  Fix several SRS to use the national NTV2 grids. Put the grid in Proj4 folder.
 */
 
-update spatial_ref_sys 
-set proj4text='+proj=longlat +ellps=intl +no_defs +nadgrids=' || :'ntv2_grid' || ' '
-where srid=4230;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=29 +ellps=intl +units=m +no_defs +nadgrids=' || :'ntv2_grid' || ' '
-where srid=23029;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=30 +ellps=intl +units=m +no_defs +nadgrids=' || :'ntv2_grid' || ' '
-where srid=23030;
-
-update spatial_ref_sys 
-set proj4text='+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +nadgrids=@null'
-where srid=4326;
-
-update spatial_ref_sys 
-set proj4text='+proj=longlat +ellps=GRS80 +no_defs +nadgrids=@null'
-where srid=4258;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=29 +ellps=WGS84 +datum=WGS84 +units=m +no_defs +nadgrids=@null'
-where srid=32629;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=30 +ellps=WGS84 +datum=WGS84 +units=m +no_defs +nadgrids=@null'
-where srid=32630;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=29 +ellps=GRS80 +units=m +no_defs +nadgrids=@null'
-where srid=25829;
-
-update spatial_ref_sys 
-set proj4text='+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs +nadgrids=@null'
-where srid=25830;
+begin;
 
 /*
   Test transformations
