@@ -246,3 +246,121 @@ begin
 end;
 $$
 language plpgsql;
+
+/*
+
+   This function for iCOM constructs "clouds" ridges along polygon's
+   boundaries or linestrings.
+
+   It only accepts ST_LineString geometry types.
+
+   Use examples:
+
+    select
+      row_number() over (order by gid) as gid,
+      st_curvetoline(gs__cloudy_geom((st_dump(geom)).geom, 0.05, 0.025, 1)) as geom  
+    from
+      curves.line;
+
+    with lines as(
+    select
+      (st_dump(st_boundary(geom))).geom as geom
+    from
+      curves.poly)
+    select
+      row_number() over (order by geom) as gid,
+      st_curvetoline((gs__cloudy_geom(geom, 0.1, 0.1, -1))) as geom
+    from
+      lines;
+
+*/
+create or replace function public.gs__cloudy_geom(
+  _geom geometry,
+  _cloud_length float,
+  _cloud_height float,
+  _side integer            -- 1 left / -1 right
+) returns geometry as
+$$
+declare
+  _ewkt text;
+  _i integer;
+  _t integer;
+  _p0 geometry;
+  _p1 geometry;
+  _p2 geometry;
+  _line geometry;
+  _segment geometry;
+  _curvature_point geometry;
+  _length float;
+  _narcs integer;             -- number of arcs in segment
+  _interpolationpercent float;
+  _i0 float;
+  _i1 float;
+  _i2 float;
+begin
+  _ewkt = 'SRID=4326;COMPOUNDCURVE(';
+
+  if st_geometrytype(_geom) not in ('ST_LineString') then
+    return null;
+  end if;
+
+n  <<nextsegment>>
+  for _i in 1..st_npoints(_geom)-1 loop
+    _p0 = st_pointn(_geom, _i);
+    _p1 = st_pointn(_geom, _i+1);
+    _line = st_makeline(_p0, _p1);
+
+    _length = st_length(_line);
+
+    -- If segment's length is less than cloud length, draw a straigth
+    -- segment instead and skip to next one
+    if _length<_cloud_length then
+      _ewkt = _ewkt || 'LINESTRING(' || st_x(_p0) || ' ' || st_y(_p0) || ',' ||
+      	      st_x(_p1) || ' ' || st_y(_p1) || '),';
+      continue nextsegment;
+    end if;
+
+    _narcs = (_length/_cloud_length)::integer;
+
+    -- Final length of arcs
+    _cloud_length = _cloud_length+((_length-(((_length/_cloud_length)::integer)*_cloud_length))/_narcs);
+
+    _interpolationpercent = _cloud_length/_length;
+
+    -- Segmentize
+    for _t in 0.._narcs-1 loop
+      _i0 = _interpolationpercent*_t;
+      _i1 = (_interpolationpercent*_t)+(_interpolationpercent/2);
+      _i2 = _interpolationpercent*(_t+1);
+
+      if _i2>1 then _i2=1; end if;
+
+      _p0 = st_lineinterpolatepoint(_line, _i0);
+      _p1 = st_lineinterpolatepoint(_line, _i1);
+      _p2 = st_lineinterpolatepoint(_line, _i2);
+
+      if _side=1 then 
+        _curvature_point = (gs__apply_vector_to_point(
+        		     (gs__vector_2d_left_perp(gs__vector_from_segment(_line))#)*_cloud_height,
+			     _p1,
+	     		     4326)
+			   );
+      else
+        _curvature_point = (gs__apply_vector_to_point(
+        		     (gs__vector_2d_right_perp(gs__vector_from_segment(_line))#)*_cloud_height,
+			     _p1,
+	     		     4326)
+			   );
+      end if;
+        
+      _ewkt = _ewkt || 'CIRCULARSTRING(' || st_x(_p0) || ' ' || st_y(_p0) || ',' ||
+      	      st_x(_curvature_point) || ' ' || st_y(_curvature_point) || ',' ||
+	      st_x(_p2) || ' ' || st_y(_p2) || '),';
+    end loop;
+  end loop nextsegment;
+
+  _ewkt = rtrim(_ewkt, ',') || ')';
+  return st_geomfromewkt(_ewkt);
+end;
+$$
+language plpgsql;
