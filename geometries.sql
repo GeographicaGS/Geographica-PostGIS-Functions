@@ -304,7 +304,7 @@ begin
     return null;
   end if;
 
-n  <<nextsegment>>
+  <<nextsegment>>
   for _i in 1..st_npoints(_geom)-1 loop
     _p0 = st_pointn(_geom, _i);
     _p1 = st_pointn(_geom, _i+1);
