@@ -278,8 +278,11 @@ create or replace function public.gs__vector_2d_left_perp(
   _v gs__vector
 ) returns gs__vector as
 $$
+declare
+  _out gs__vector;
 begin
-  return ((-_v.y, _v.x, 0)::gs__vector);
+  _out = (-_v.y, _v.x, 0)::gs__vector;
+  return _out;
 end;
 $$
 language 'plpgsql';
@@ -294,8 +297,11 @@ create or replace function public.gs__vector_2d_right_perp(
   _v gs__vector
 ) returns gs__vector as
 $$
+declare
+  _out gs__vector;
 begin
-  return ((_v.y, -_v.x, 0)::gs__vector);
+  _out = (_v.y, -_v.x, 0)::gs__vector;
+  return _out;
 end;
 $$
 language 'plpgsql';
@@ -316,13 +322,13 @@ $$
 declare
   _p0 geometry;
   _p1 geometry;
+  _out gs__vector;
 begin
   _p0 = st_pointn(_l, 1);
   _p1 = st_pointn(_l, st_numpoints(_l));
 
-  raise info 'P0: %, P1: %', st_asewkt(_p0), st_asewkt(_p1);
-
-  return gs__vector_from_points(_p0, _p1);
+  _out = gs__vector_from_points(_p0, _p1);
+  return _out;
 end;
 $$
 language 'plpgsql';
