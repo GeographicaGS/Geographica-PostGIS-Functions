@@ -283,13 +283,10 @@ create or replace function public.gs__cloudy_geom(
 $$
 declare
   _ewkt text;
-  _i integer;
-  _t integer;
   _p0 geometry;
   _p1 geometry;
   _p2 geometry;
   _line geometry;
-  _segment geometry;
   _curvature_point geometry;
   _length float;
   _narcs integer;             -- number of arcs in segment
@@ -297,6 +294,9 @@ declare
   _i0 float;
   _i1 float;
   _i2 float;
+  _defectlength float;
+  _excesslength float;
+  _finalcloudlength float;
 begin
   _ewkt = 'SRID=4326;COMPOUNDCURVE(';
 
@@ -309,7 +309,6 @@ begin
     _p0 = st_pointn(_geom, _i);
     _p1 = st_pointn(_geom, _i+1);
     _line = st_makeline(_p0, _p1);
-
     _length = st_length(_line);
 
     -- If segment's length is less than cloud length, draw a straigth
@@ -317,15 +316,25 @@ begin
     if _length<_cloud_length then
       _ewkt = _ewkt || 'LINESTRING(' || st_x(_p0) || ' ' || st_y(_p0) || ',' ||
       	      st_x(_p1) || ' ' || st_y(_p1) || '),';
+
       continue nextsegment;
     end if;
 
-    _narcs = (_length/_cloud_length)::integer;
+    _narcs = floor((_length/_cloud_length));
 
     -- Final length of arcs
-    _cloud_length = _cloud_length+((_length-(((_length/_cloud_length)::integer)*_cloud_length))/_narcs);
+    _defectlength = _length-(_narcs*_cloud_length);
+    _excesslength = ((_narcs+1)*_cloud_length)-_length;
 
-    _interpolationpercent = _cloud_length/_length;
+    if _defectlength<_excesslength then
+       _finalcloudlength = _cloud_length+(_defectlength/_narcs);
+       _narcs = _narcs;
+    else
+	_finalcloudlength = _cloud_length-(_excesslength/(_narcs+1));
+	_narcs = _narcs+1;
+    end if;
+
+    _interpolationpercent = _finalcloudlength/_length;
 
     -- Segmentize
     for _t in 0.._narcs-1 loop
