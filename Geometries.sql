@@ -4,6 +4,8 @@
 
 */
 
+begin;
+
 /*
 
   Creates a polygonal rectangle from two points: lower left and upper
@@ -76,51 +78,6 @@ begin
 			_point_ul,
 			_point_ll
 	]));
-end;
-$$
-language plpgsql;
-
-/*
-
-  Returns a [minx,miny,maxx,maxy] for a set of geometries passed as a
-  geometry array.
-
-*/
-create or replace function public.gs__geomboundaries(
-  _geom geometry[]
-) returns float[] as
-$$
-declare
-  _g geometry;
-  _minx float;
-  _miny float;
-  _maxx float;
-  _maxy float;
-begin
-  _minx = st_xmin(_geom[1]);
-  _miny = st_ymin(_geom[1]);
-	_maxx = st_xmax(_geom[1]);
-	_maxy = st_ymax(_geom[1]);
-
-	foreach _g in array _geom loop
-    if st_xmin(_g)<_minx then
-		  _minx = st_xmin(_g);
-		end if;
-
-    if st_ymin(_g)<_miny then
-		  _miny = st_ymin(_g);
-		end if;
-
-    if st_xmax(_g)>_maxx then
-		  _maxx = st_xmax(_g);
-		end if;
-
-    if st_ymax(_g)>_maxy then
-		  _maxy = st_ymax(_g);
-		end if;
-  end loop;
-
-  return array[_minx,_miny,_maxx,_maxy]::float[];
 end;
 $$
 language plpgsql;
@@ -317,7 +274,6 @@ begin
       _narcs = 1;
       _finalcloudlength=_length;
       _finalcloudheight=_cloud_height*_length/_cloud_length;
-      _length, _cloud_length, _length/_cloud_length, _finalcloudheight;
       _interpolationpercent = 1;
     else
       -- Final length of arcs
@@ -373,3 +329,65 @@ begin
 end;
 $$
 language plpgsql;
+
+
+
+/*
+
+  This function takes box ST_Linestring (that is, a closed linestring
+  with 4 sides) and place equaly spaced points along each face,
+  joining with lines opposite ones. It is intended to be used to
+  subdivide a grid.
+
+  The functions need as arguments the ST_Linestring and the number of
+  subdivisions to apply.
+
+  Returns a set of geometries: lines connecting opposing points and
+  the ST_Linestring itself. Later a topology must be build to create
+  polygons from those lines.
+
+*/
+
+create or replace function public.gs__gridlines(
+  _geom geometry,
+  _subdivisions integer
+) returns setof geometry as
+$$
+declare
+  _line geometry;
+  _basestep float;
+  _ret geometry;
+  _opposite integer;
+  _points geometry[];
+begin
+  _points = array[]::geometry[];		
+
+  -- Address faces
+  for _a in 1..4 loop
+    _line = st_makeline(st_pointn(_geom, _a), st_pointn(_geom, _a+1));
+    _basestep = (st_length(_line)/(_subdivisions))/st_length(_line);
+
+    for _b in 1.._subdivisions-1 loop
+      _ret = st_lineinterpolatepoint(_line, _b*_basestep);
+      _points = _points || _ret;
+    end loop;
+  end loop;
+
+  for _a in 1..(_subdivisions-1) loop
+    _opposite = (((_subdivisions-1)*3)+1)-_a;
+    _ret = st_makeline(_points[_a], _points[_opposite]);
+    return next _ret;
+  end loop;
+
+  for _a in _subdivisions..((_subdivisions-1)*2) loop
+    _opposite = (_subdivisions+((_subdivisions-1)*4))-_a;
+    _ret = st_makeline(_points[_a], _points[_opposite]);
+    return next _ret;
+  end loop;
+
+ return next _geom;
+end;
+$$
+language plpgsql;
+
+commit;
