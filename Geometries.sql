@@ -365,6 +365,7 @@ begin
   -- Address faces
   for _a in 1..4 loop
     _line = st_makeline(st_pointn(_geom, _a), st_pointn(_geom, _a+1));
+    return next _line;
     _basestep = (st_length(_line)/(_subdivisions))/st_length(_line);
 
     for _b in 1.._subdivisions-1 loop
@@ -384,8 +385,6 @@ begin
     _ret = st_makeline(_points[_a], _points[_opposite]);
     return next _ret;
   end loop;
-
- return next _geom;
 end;
 $$
 language plpgsql;
