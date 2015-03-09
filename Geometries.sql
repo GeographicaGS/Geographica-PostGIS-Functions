@@ -65,7 +65,7 @@ declare
   _point_ul geometry;
   _point_ur geometry;
 begin
-	_point_ll = st_makepoint(_array[1], _array[2]);
+  _point_ll = st_makepoint(_array[1], _array[2]);
   _point_lr = st_makepoint(_array[3], _array[2]);
   _point_ul = st_makepoint(_array[1], _array[4]);
   _point_ur = st_makepoint(_array[3], _array[4]);
@@ -73,11 +73,10 @@ begin
   return st_makepolygon(
     st_makeline(array[
       _point_ll,
-			_point_lr,
-			_point_ur,
-			_point_ul,
-			_point_ll
-	]));
+      _point_lr,
+      _point_ur,
+      _point_ul,
+      _point_ll]));
 end;
 $$
 language plpgsql;
@@ -389,4 +388,72 @@ end;
 $$
 language plpgsql;
 
+
+
+/*
+
+  Takes a [xmin, ymin, xmax, ymax] and creates an evenly distributed grid of rows,columns size
+  as polygons.
+  Optionally, grids can have an offset for overlapping other ones.
+
+*/
+create or replace function public.gs__polygongrid(
+  _coordarray float[],
+  _rows integer,
+  _columns integer,
+  _offset float
+) returns setof geometry as
+$$
+declare
+  _xstep float;
+  _ystep float;
+  _a integer;
+  _b integer;
+  _xmin float;
+  _ymin float;
+  _xmax float;
+  _ymax float;
+begin
+  -- Filter absurd offset
+  if _offset is null or _offset<0 then
+    _offset=0;
+  end if;
+
+  _xstep = (_coordarray[3]-_coordarray[1])/_rows;
+  _ystep = (_coordarray[4]-_coordarray[2])/_columns;
+
+  for _a in 0.._rows-1 loop
+    for _b in 0.._columns-1 loop
+      _xmin = _coordarray[1]+(_a*_xstep)-_offset;
+      _xmax = _coordarray[1]+((_a+1)*_xstep)+_offset;
+      _ymin = _coordarray[2]+(_b*_ystep)-_offset;
+      _ymax = _coordarray[2]+((_b+1)*_ystep)+_offset;
+
+      return next gs__rectangle(array[_xmin,_ymin,_xmax,_ymax]::float[]);
+    end loop;
+  end loop;
+end;
+$$
+language plpgsql;
+
+
+
+/*
+
+  Overload of the preceding function without offset.
+
+*/
+create or replace function public.gs__polygongrid(
+  _coordarray float[],
+  _rows integer,
+  _columns integer
+) returns setof geometry as
+$$
+  select gs__polygongrid(_coordarray, _rows, _columns, 0);
+$$
+language sql;
+
+
+
 commit;
+
