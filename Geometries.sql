@@ -455,5 +455,53 @@ language sql;
 
 
 
+/*
+
+  Affine transformation: scale around an arbitrary point:
+    _geom : geometry to transform
+    _sw : scale width
+    _sh : scale height
+    _x : x of scale point
+    _y : y of scale point
+
+*/
+create or replace function public.gs__scalearoundpoint(
+  _geom geometry,
+  _sw float,
+  _sh float,
+  _x float,
+  _y float
+) returns geometry as
+$$
+  select st_affine(_geom, _sw, 0, 0, _sh, _x-(_sw*_x), _y-(_sh*_y));
+$$
+language sql;
+
+
+
+/*
+
+  Overloading of the former function. Affine transformation: scale
+  around an arbitrary point:
+
+    _geom : geometry to transform
+    _sw : scale width
+    _sh : scale height
+    _point : pointg geometry to transform around
+
+*/
+create or replace function public.gs__scalearoundpoint(
+  _geom geometry,
+  _sw float,
+  _sh float,
+  _point geometry
+) returns geometry as
+$$
+  select gs__scalearoundpoint(_geom, _sw, _sh, st_x(_point), st_y(_point));
+$$
+language sql;
+
+
+
 commit;
 
