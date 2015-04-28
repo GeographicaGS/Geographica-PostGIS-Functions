@@ -12,13 +12,14 @@ begin;
 
 */
 drop type if exists gs__column cascade;
+
 create type gs__column as(
   name varchar(250),
 	type varchar(50),
 	varchar_length integer,
-  geom_srid varchar(50),
-  geom_geometrytype varchar(50),
-  geom_bbox geometry
+  geomsrid varchar(50),
+  geomgeometrytype varchar(50),
+  geombbox geometry
 );
 
 /*
@@ -26,11 +27,12 @@ create type gs__column as(
   Type for schema.table.column syntax.
 
 */
-drop type if exists gs__o_name cascade;
-create type gs__o_name as(
-  o_schema varchar(250),
-  o_table varchar(250),
-  o_column varchar(250)
+drop type if exists gs__oname cascade;
+
+create type gs__oname as(
+  oschema varchar(250),
+  otable varchar(250),
+  ocolumn varchar(250)
 );
 
 /*
@@ -38,36 +40,38 @@ create type gs__o_name as(
   Gets a gs__o_name from a schema.table.column string.
 
 */
-create or replace function public.gs__o_name(
+drop function if exists public.gs__oname(varchar);
+
+create or replace function public.gs__oname(
   _name varchar(2000)
-) returns gs__o_name as
+) returns gs__oname as
 $$
   select (split_part($1, '.', 1),
           split_part($1, '.', 2),
-          split_part($1, '.', 3))::gs__o_name;
+          split_part($1, '.', 3))::gs__oname;
 $$
 language sql;
 
 /*
 
-  Returns info about a column.
+  Returns info about a column in PostGIS 1.
 
 */
-create or replace function public.gs__get_column_info(
+create or replace function public.gs__getcolumninfo(
   _column varchar(250)
 ) returns gs__column as
 $$
 declare
-  _information_schema record;
+  _informationschema record;
   _sql text;
-  _o gs__o_name;
+  _o gs__oname;
   _out gs__column;
   _srid varchar(40);
   _geometrytype varchar(100);
-  _geom_bbox geometry;
+  _geombbox geometry;
   _nrow integer;
 begin 
-  _o = gs__o_name(_column); 
+  _o = gs__oname(_column); 
 
   -- Get information in information_schema.columns.
   execute 'select udt_name, character_maximum_length
@@ -75,20 +79,20 @@ begin
            where table_schema=$1 and
                  table_name=$2 and
                  column_name=$3;'
-  using _o.o_schema, _o.o_table, _o.o_column
-  into _information_schema;
+  using _o.oschema, _o.otable, _o.ocolumn
+  into _informationschema;
 
   -- No column in information_schema.columns
-  if _information_schema.udt_name is null and 
-     _information_schema.character_maximum_length is null
+  if _informationschema.udt_name is null and 
+     _informationschema.character_maximum_length is null
   then
     return null;
   end if;
 
-  if _information_schema.udt_name='geometry' then
+  if _informationschema.udt_name='geometry' then
     -- Check SRID uniformity
-    _sql = 'select distinct st_srid(' || _o.o_column || ')::varchar as srid
-            from ' || _o.o_schema || '.' || _o.o_table || ';';
+    _sql = 'select distinct st_srid(' || _o.ocolumn || ')::varchar as srid
+            from ' || _o.oschema || '.' || _o.otable || ';';
 
     execute _sql into _srid;
     get diagnostics _nrow = ROW_COUNT;
@@ -98,8 +102,8 @@ begin
     end if;
 
     -- Check geometrytype uniformity
-    _sql = 'select distinct st_geometrytype(' || _o.o_column || ') as srid
-            from ' || _o.o_schema || '.' || _o.o_table || ';';
+    _sql = 'select distinct st_geometrytype(' || _o.ocolumn || ') as srid
+            from ' || _o.oschema || '.' || _o.otable || ';';
 
     execute _sql into _geometrytype;
     get diagnostics _nrow = ROW_COUNT;
@@ -111,23 +115,23 @@ begin
     -- Get bounding box
     if _srid<>'ERR_Mixed' then
       _sql = 'with c as(
-                select st_collect(' || _o.o_column || ') as geom
-                from ' || _o.o_schema || '.' || _o.o_table || '
+                select st_collect(' || _o.ocolumn || ') as geom
+                from ' || _o.oschema || '.' || _o.otable || '
               )
               select
                 st_setsrid(gs__rectangle(gs__geom_boundaries(geom)),' || _srid::integer || ') as geom
               from c;';
       
-      execute _sql into _geom_bbox;
+      execute _sql into _geombbox;
       else
-        _geom_bbox = null;
+        _geombbox = null;
     end if;
   end if;
 
-  _out = (_o.o_column, 
-          _information_schema.udt_name, 
-          _information_schema.character_maximum_length,
-          _srid, _geometrytype, _geom_bbox)::gs__column;
+  _out = (_o.ocolumn, 
+          _informationschema.udt_name, 
+          _informationschema.character_maximum_length,
+          _srid, _geometrytype, _geombbox)::gs__column;
 
   return _out;
 end;
