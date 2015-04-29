@@ -237,4 +237,36 @@ end;
 $$
 language plpgsql;
 
+/*
+
+  Returns all tables in a schema.
+
+  Takes the schema name as varchar and the table type to be returned
+  also as a varchar. Types can be:
+
+    - BASE: base tables
+    - VIEW: views
+
+  On any other value all tables will be returned.
+*/
+create or replace function public.gs__getschematables(
+  _schema varchar(250),
+  _type varchar(4)
+) returns setof varchar as
+$$
+  select
+    table_name::varchar
+  from
+    information_schema.tables
+  where
+    table_schema=_schema and 
+    table_type like
+    case
+      when _type='BASE' then 'BASE TABLE'
+      when _type='VIEW' then 'VIEW'
+      else '%'
+    end;
+$$
+language sql;
+
 commit;
