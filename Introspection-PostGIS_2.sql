@@ -55,6 +55,75 @@ $$
 $$
 language sql;
 
+/*
+
+  Simply gets a gs__oname and returns it as a string.
+
+*/
+drop function if exists public.gs__onamestring(gs__oname);
+
+create or replace function public.gs__onamestring(
+  _gs__oname gs__oname
+) returns varchar as
+$$
+declare
+  _t varchar;
+begin
+  _t = '';
+
+  if _gs__oname.oschema<>'' and
+     (_gs__oname.otable='' or _gs__oname.otable is null) and
+     (_gs__oname.ocolumn='' or _gs__oname.ocolumn is null)
+  then
+    _t = _gs__oname.oschema;
+  end if;
+
+  if (_gs__oname.oschema='' or _gs__oname.oschema is null) and
+     _gs__oname.otable<>'' and
+     (_gs__oname.ocolumn='' or _gs__oname.ocolumn is null)
+  then
+    _t = _gs__oname.otable;
+  end if;
+
+  if _gs__oname.oschema<>'' and
+     _gs__oname.otable<>'' and
+     (_gs__oname.ocolumn='' or _gs__oname.ocolumn is null)
+  then
+    _t = _gs__oname.oschema || '.' || _gs__oname.otable;
+  end if;
+
+  if (_gs__oname.oschema='' or _gs__oname.oschema is null) and
+     (_gs__oname.otable='' or _gs__oname.otable is null) and
+     _gs__oname.ocolumn<>''
+  then
+    _t = _gs__oname.ocolumn;
+  end if;
+
+  if _gs__oname.oschema<>'' and
+     (_gs__oname.otable='' or _gs__oname.otable is null) and
+     _gs__oname.ocolumn<>''
+  then
+    _t = null;
+  end if;
+
+  if (_gs__oname.oschema='' or _gs__oname.oschema is null) and
+     _gs__oname.otable<>'' and
+     _gs__oname.ocolumn<>''
+  then
+    _t = _gs__oname.otable || '.' || _gs__oname.ocolumn;
+  end if;
+
+  if _gs__oname.oschema<>'' and
+     _gs__oname.otable<>'' and
+     _gs__oname.ocolumn<>''
+  then
+    _t = _gs__oname.oschema || '.' || _gs__oname.otable || '.' || _gs__oname.ocolumn;
+  end if;
+
+  return _t;
+end;
+$$
+language plpgsql;
 
 /*
 
