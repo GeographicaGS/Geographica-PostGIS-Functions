@@ -4,12 +4,14 @@
 
 */
 
+begin;
+
 /*
 
   Tidy up strings for use as object's name.
 
 */
-create or replace function public.gs__tidy_names(
+create or replace function public.gs__tidynames(
   _name text
 ) returns text as
 $$
@@ -23,3 +25,32 @@ begin
 end;
 $$
 language plpgsql;
+
+
+/*
+
+  This function takes a string and prepends a character up 
+  to a target length.
+
+*/
+create or replace function public.gs__prependcharacter(
+  _string varchar,
+  _character char,
+  _targetlength integer
+) returns varchar as
+$$
+declare
+  _out varchar;
+begin
+  _out = _string;
+
+  while length(_out)<_targetlength loop
+    _out = _character || _out;
+  end loop;
+
+  return _out;
+end;
+$$
+language plpgsql;
+
+commit;
