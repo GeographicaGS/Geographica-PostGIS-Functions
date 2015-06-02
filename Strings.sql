@@ -82,10 +82,17 @@ begin
       _rootended = true;
     elseif _c in ('-','+','0','1','2','3','4','5','6','7','8','9','.') and _rootended then
       _index = _index || _c;
+    else
+      return null;
     end if;
   end loop;
 
-  _out = (_root::float)*10^(_index::float);
+  if _index<>'' then 
+    _out = (_root::float)*10^(_index::float);
+  else
+    _out = _root::float;
+  end if;
+  
   return _out;
 end;
 $$
