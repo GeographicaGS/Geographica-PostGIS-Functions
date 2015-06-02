@@ -54,3 +54,41 @@ $$
 language plpgsql;
 
 commit;
+
+/*
+
+  This function process numbers in scientific notation.
+
+*/
+create or replace function public.gs__scientificnotation(
+  _string varchar
+) returns float as
+$$
+declare
+  _out float;
+  _i integer;
+  _root varchar;
+  _index varchar;
+  _c char;
+  _rootended boolean;
+begin
+  _root = '';
+  _index = '';
+  _rootended = false;
+
+  for _i in 1..length(_string) loop
+    _c = substr(_string, _i, 1);
+    if _c in ('-','+','0','1','2','3','4','5','6','7','8','9','.') and not _rootended then
+      _root = _root || _c;
+    elseif _c in ('E','e') then
+      _rootended = true;
+    elseif _c in ('-','+','0','1','2','3','4','5','6','7','8','9','.') and _rootended then
+      _index = _index || _c;
+    end if;
+  end loop;
+
+  _out = (_root::float)*10^(_index::float);
+  return _out;
+end;
+$$
+language plpgsql;
