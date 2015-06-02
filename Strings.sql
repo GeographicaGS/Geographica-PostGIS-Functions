@@ -53,8 +53,6 @@ end;
 $$
 language plpgsql;
 
-commit;
-
 /*
 
   This function process numbers in scientific notation.
@@ -92,3 +90,5 @@ begin
 end;
 $$
 language plpgsql;
+
+commit;
