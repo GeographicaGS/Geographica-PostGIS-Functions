@@ -367,6 +367,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Returns an array with repeated elements deleted. integer variant.
@@ -393,6 +395,41 @@ begin
   end loop;
 
   return _out;
+end;
+$$
+language plpgsql;
+
+
+-- Orders an array, varchar variant
+
+create or replace function public.gs__orderarray(
+  _a varchar[]
+) returns varchar[] as
+$$
+declare
+  _ordered boolean;
+  _i integer;
+  _swap0 varchar;
+  _swap1 varchar;
+begin
+  _ordered = false;
+
+  while not _ordered loop
+    _ordered = true;
+
+    for _i in 1..array_length(_a,1)-1 loop
+      raise warning '%', _a[_i];
+      if _a[_i]>_a[_i+1] then
+        _swap0 = _a[_i];
+	_swap1 = _a[_i+1];
+	_a[_i] = _swap1;
+	_a[_i+1] = _swap0;
+	_ordered = false;
+      end if;
+    end loop;
+  end loop;
+
+  return _a;
 end;
 $$
 language plpgsql;
