@@ -418,7 +418,6 @@ begin
     _ordered = true;
 
     for _i in 1..array_length(_a,1)-1 loop
-      raise warning '%', _a[_i];
       if _a[_i]>_a[_i+1] then
         _swap0 = _a[_i];
 	_swap1 = _a[_i+1];
