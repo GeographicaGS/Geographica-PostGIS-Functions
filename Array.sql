@@ -281,6 +281,37 @@ end;
 $$
 language plpgsql;
 
+
+/*
+
+  Returns all indices where an element is in a array. (varchar
+  variant).
+
+*/
+create or replace function gs__elementindices(
+  _array varchar[],
+  _element varchar
+) returns integer[] as
+$$
+declare
+  _i varchar;
+  _o integer[];
+begin
+  _o = array[]::integer[];
+
+  for _i in 1..array_length(_array,1) loop
+    if _array[_i]=_element then
+      _o = _o || _i;
+    end if;
+  end loop;
+
+  return _o;
+end;
+$$
+language plpgsql;
+
+
+
 /*
 
   Inserts a subarray within an array in multiple positions. (integer
@@ -429,6 +460,30 @@ begin
   end loop;
 
   return _a;
+end;
+$$
+language plpgsql;
+
+
+-- Deletes element from an array indexed by another array of integers
+
+create or replace function public.gs__deletebyindices(
+  _array anyarray,
+  _indices integer[]
+) returns varchar[] as
+$$
+declare
+  _i integer;
+  _o integer;
+begin
+  _o = 0;
+
+  foreach _i in array _indices loop
+    _array = gs__pullfromarray(_array, _i-_o);
+    _o = _o+1;
+  end loop;
+
+  return _array;
 end;
 $$
 language plpgsql;

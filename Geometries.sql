@@ -502,6 +502,61 @@ $$
 language sql;
 
 
+/*
+
+  Takes a multigeometry and outputs an array of geometries.
+
+*/
+create or replace function public.gs__geomarrayfrommulti(
+  _geom geometry
+) returns geometry[] as
+$$
+declare
+  _out geometry[];
+  _i record;
+begin
+  _out = array[]::geometry[];
+
+  for _i in select * from st_dump(_geom) loop
+    _out = _out || _i.geom;
+  end loop;
+  
+  return _out;
+end;
+$$
+language plpgsql;
+
+
+/*
+
+  Computes gravity center of an array of points.
+
+*/
+create or replace function public.gs__gravitycenter(
+  _points geometry[]
+) returns geometry as
+$$
+declare
+  _point geometry;
+  _g geometry;
+  _x float;
+  _y float;
+begin
+  _x = 0;
+  _y = 0;
+
+  foreach _g in array _points loop
+    _x = _x+st_x(_g);
+    _y = _y+st_y(_g);
+  end loop;
+
+  _x = _x/array_length(_points, 1);
+  _y = _y/array_length(_points, 1);
+
+  return st_point(_x, _y);
+end;
+$$
+language plpgsql;
+
 
 commit;
-
