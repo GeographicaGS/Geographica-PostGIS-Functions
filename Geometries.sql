@@ -559,4 +559,74 @@ $$
 language plpgsql;
 
 
+
+/*
+
+  Clean small angles in linestrings. Angle is in degrees.
+
+*/
+create or replace function public.gs__cleanangles(
+  _line geometry,
+  _angle float
+)
+returns geometry as
+$$
+declare
+  _i integer;
+  _p geometry[];
+  _ang float;
+  _out geometry;
+begin
+  -- Check geometry type
+  
+  if st_geometrytype(_line)<>'ST_LineString' then
+    return null;
+  end if;
+
+  -- Decompose linestring into matrix of points
+
+  _p = array[]::geometry[];
+
+  for _i in 1..st_npoints(_line) loop
+    _p = _p || st_pointn(_line, _i);
+  end loop;
+
+  _i = 1;
+
+  while _i<=array_length(_p,1)-1 loop
+    -- Check if it is the initial vertex of a closed
+    if _i=1 and _p[1]=_p[array_length(_p,1)] then
+      _ang = gsv__vectorangle(gsv__vectorfrompoints(_p[array_length(_p,1)-1], _p[1]),
+      			      gsv__vectorfrompoints(_p[1], _p[2]));
+
+      if degrees(_ang)<_angle then
+        _p = gs__pullfromarray(_p, 1);
+	_p = gs__pullfromarray(_p, array_length(_p,1));
+	_p = _p || _p[1];
+      else
+        _i = _i+1;
+      end if;
+    else
+      if _i=1 then 
+	_i = _i+1;
+      else
+        _ang = gsv__vectorangle(gsv__vectorfrompoints(_p[_i-1], _p[_i]),
+    			    gsv__vectorfrompoints(_p[_i], _p[_i+1]));
+			    
+        if degrees(_ang)<_angle then
+          _p = gs__pullfromarray(_p, _i);
+	else
+	  _i = _i+1;
+	end if;
+      end if;
+    end if;
+  end loop;
+
+  _out = st_makeline(_p);
+  return _out;
+end
+$$
+language 'plpgsql';
+
+
 commit;

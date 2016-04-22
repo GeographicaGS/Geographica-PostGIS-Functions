@@ -2,11 +2,13 @@
    Vector functions
    ---------------- */
 
+begin;
+
 /*
   Vector 3D type
 */
 
-create type public.gs__vector as
+create type public.gsv__vector as
 (
   x numeric,
   y numeric,
@@ -19,15 +21,15 @@ create type public.gs__vector as
   Vector sum
 */
 
-create or replace function public.gs__sum_vector
+create or replace function public.gsv__sum
 (
-  _v1 gs__vector,
-  _v2 gs__vector
+  _v1 gsv__vector,
+  _v2 gsv__vector
 )
-returns gs__vector as
+returns gsv__vector as
 $$
 declare
-  _v gs__vector;
+  _v gsv__vector;
 begin
   _v.x := _v1.x+_v2.x;
   _v.y := _v1.y+_v2.y;
@@ -46,9 +48,9 @@ language plpgsql;
 
 create operator +
 (
-  leftarg = gs__vector,
-  rightarg = gs__vector,
-  procedure = gs__sum_vector,
+  leftarg = gsv__vector,
+  rightarg = gsv__vector,
+  procedure = gsv__sum,
   commutator = +
 );
 
@@ -58,9 +60,9 @@ create operator +
   Vector module
 */
 
-create or replace function public.gs__vector_module
+create or replace function public.gsv__module
 (
-  _v gs__vector
+  _v gsv__vector
 )
 returns numeric as
 $$
@@ -78,26 +80,26 @@ language plpgsql;
 
 create operator &
 (
-  leftarg = gs__vector,
-  procedure = gs__vector_module
+  leftarg = gsv__vector,
+  procedure = gsv__module
 );
 
 
 
 
 /*
-  Vector by scalar multiplier
+  Vector by scalar product
 */
 
-create or replace function public.gs__vector_by_scalar_multiplier
+create or replace function public.gsv__scalarprod
 (
-  _v gs__vector,
+  _v gsv__vector,
   _s double precision
 )
-returns gs__vector as
+returns gsv__vector as
 $$
 declare
-  _o gs__vector;
+  _o gsv__vector;
 begin
   _o.x := _v.x*_s;
   _o.y := _v.y*_s;
@@ -116,27 +118,27 @@ language plpgsql;
 
 create operator *
 (
-  leftarg = gs__vector,
+  leftarg = gsv__vector,
   rightarg = double precision,
-  procedure = gs__vector_by_scalar_multiplier,
+  procedure = gsv__scalarprod,
   commutator = *
 );
 
 
 
 /*
-  Vector scalar multiplier
+  Vector dot product
 */
 
-create or replace function public.gs__vector_scalar_multiplier
+create or replace function public.gsv__dotprod
 (
-  _v1 gs__vector,
-  _v2 gs__vector
+  _v1 gsv__vector,
+  _v2 gsv__vector
 )
 returns double precision as
 $$
 declare
-  _v gs__vector;
+  _v gsv__vector;
 begin
   return _v1.x*_v2.x+_v1.y*_v2.y+_v1.z*_v2.z;
 end;
@@ -146,14 +148,14 @@ language plpgsql;
 
 
 /*
-  Vector scalar multiplier
+  Vector dot product
 */
 
 create operator *
 (
-  leftarg = gs__vector,
-  rightarg = gs__vector,
-  procedure = gs__vector_scalar_multiplier,
+  leftarg = gsv__vector,
+  rightarg = gsv__vector,
+  procedure = gsv__dotprod,
   commutator = *
 );
 
@@ -163,14 +165,14 @@ create operator *
   Returns an unitarian vector for a vector
 */
 
-create or replace function public.gs__unitarian_vector
+create or replace function public.gsv__unitvector
 (
-  _v gs__vector
+  _v gsv__vector
 )
-returns gs__vector as
+returns gsv__vector as
 $$
 declare
-  _o gs__vector;
+  _o gsv__vector;
 begin
   _o.x := _v.x/(_v&);
   _o.y := _v.y/(_v&);
@@ -189,8 +191,8 @@ language 'plpgsql';
 
 create operator #
 (
-  leftarg = gs__vector,
-  procedure = gs__unitarian_vector
+  leftarg = gsv__vector,
+  procedure = gsv__unitvector
 );
 
 
@@ -199,15 +201,15 @@ create operator #
   Returns a vector from two points
 */
 
-create or replace function public.gs__vector_from_points
+create or replace function public.gsv__vectorfrompoints
 (
   _p1 geometry,
   _p2 geometry
 )
-returns gs__vector as
+returns gsv__vector as
 $$
 declare
-  _v gs__vector;
+  _v gsv__vector;
 begin
   _v.x := st_x(_p2)-st_x(_p1);
   _v.y := st_y(_p2)-st_y(_p1);
@@ -230,9 +232,9 @@ language 'plpgsql';
   of a vector applied to a point
 */
 
-create or replace function public.gs__apply_vector_to_point
+create or replace function public.gsv__applyvectortopoint
 (
-  _v gs__vector,
+  _v gsv__vector,
   _p geometry,
   _srid integer
 )
@@ -254,16 +256,16 @@ language 'plpgsql';
   Draws a line from a vector applied to a point
 */
 
-create or replace function public.gs__vector_to_line
+create or replace function public.gsv__vectortoline
 (
-  _v gs__vector,
+  _v gsv__vector,
   _p geometry,
   _srid integer
 )
 returns geometry as
 $$
 begin
-  return st_makeline(_p, gs__apply_vector_to_point(_v, _p, _srid));
+  return st_makeline(_p, gsv__applyvectortopoint(_v, _p, _srid));
 end;
 $$
 language 'plpgsql';
@@ -274,14 +276,14 @@ language 'plpgsql';
   Returns a perpendicular vector of the same module at left of a 2D vector
 */
 
-create or replace function public.gs__vector_2d_left_perp(
-  _v gs__vector
-) returns gs__vector as
+create or replace function public.gsv__vectorperpleft(
+  _v gsv__vector
+) returns gsv__vector as
 $$
 declare
-  _out gs__vector;
+  _out gsv__vector;
 begin
-  _out = (-_v.y, _v.x, 0)::gs__vector;
+  _out = (-_v.y, _v.x, 0)::gsv__vector;
   return _out;
 end;
 $$
@@ -293,14 +295,14 @@ language 'plpgsql';
   Returns a perpendicular vector of the same module at right of a 2D vector
 */
 
-create or replace function public.gs__vector_2d_right_perp(
-  _v gs__vector
-) returns gs__vector as
+create or replace function public.gsv__vectorperpright(
+  _v gsv__vector
+) returns gsv__vector as
 $$
 declare
-  _out gs__vector;
+  _out gsv__vector;
 begin
-  _out = (_v.y, -_v.x, 0)::gs__vector;
+  _out = (_v.y, -_v.x, 0)::gsv__vector;
   return _out;
 end;
 $$
@@ -315,20 +317,41 @@ language 'plpgsql';
 
 */
 
-create or replace function public.gs__vector_from_segment(
+create or replace function public.gsv__vectorfromsegment(
   _l geometry
-) returns gs__vector as
+) returns gsv__vector as
 $$
 declare
   _p0 geometry;
   _p1 geometry;
-  _out gs__vector;
+  _out gsv__vector;
 begin
   _p0 = st_pointn(_l, 1);
   _p1 = st_pointn(_l, st_numpoints(_l));
 
-  _out = gs__vector_from_points(_p0, _p1);
+  _out = gsv__vectorfrompoints(_p0, _p1);
   return _out;
 end;
 $$
 language 'plpgsql';
+
+
+
+/*
+
+  Returns the angle of two vectors, in radians.
+
+*/
+
+create or replace function public.gsv__vectorangle(
+  gsv__vector,
+  gsv__vector
+) returns float as
+$$
+  select acos(($1*$2)/(gsv__module($1)*gsv__module($2)));
+$$
+language sql;
+
+
+
+commit;

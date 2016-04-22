@@ -16,6 +16,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Returns a unique matrix created by the = operator based on an
@@ -44,6 +46,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
   
   Returns the min value in a numeric array.
@@ -70,6 +74,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
   
   Returns the max value in a numeric array.
@@ -95,6 +101,8 @@ begin
 end;
 $$
 language plpgsql;
+
+
 
 /*
 
@@ -153,6 +161,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Type to store subarrays results. (varchar variant).
@@ -164,6 +174,8 @@ create type public.gs__subarray_varchar as(
   iend integer,
   subarray varchar[]
 );
+
+
 
 /*
 
@@ -193,6 +205,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Type for split array, integer variant.
@@ -204,6 +218,8 @@ create type gs__splittedarray_integer as(
   _second integer[],
   _third integer[]
 );
+
+
 
 /*
 
@@ -234,6 +250,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Inserts a subarray within an array in a given position. (integer
@@ -252,6 +270,8 @@ begin
 end;
 $$
 language plpgsql;
+
+
 
 /*
 
@@ -280,6 +300,7 @@ begin
 end;
 $$
 language plpgsql;
+
 
 
 /*
@@ -342,6 +363,8 @@ end;
 $$
 language plpgsql;
 
+
+
 /*
 
   Replaces an element of an array with a subarray in multiple
@@ -371,6 +394,8 @@ begin
 end;
 $$
 language plpgsql;
+
+
 
 /*
 
@@ -431,6 +456,8 @@ $$
 language plpgsql;
 
 
+
+
 -- Orders an array, varchar variant
 
 create or replace function public.gs__orderarray(
@@ -463,6 +490,7 @@ begin
 end;
 $$
 language plpgsql;
+
 
 
 -- Deletes element from an array indexed by another array of integers
