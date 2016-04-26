@@ -562,61 +562,156 @@ language plpgsql;
 
 /*
 
-  Clean small angles in linestrings. Angle is in degrees.
+  Clean small angles in linestrings, multilinestrings, polygons, and multipolygons. Angle is in degrees.
 
 */
 create or replace function public.gs__cleanangles(
+  _geom geometry,
+  _angle double precision
+) returns geometry as
+$$
+declare
+  _type varchar(50);
+  _parts geometry[];
+  _r record;
+  _g geometry;
+  _i record;
+  _rings geometry[];
+  _holes geometry[];
+  _out geometry;
+begin
+  _type =  st_geometrytype(_geom);
+  _parts = array[]::geometry[];
+
+  -- Dump all parts
+  for _r in select st_dump(_geom) as part loop
+    _g = (_r.part).geom;
+
+    if st_geometrytype(_g) not in ('ST_LineString') then
+      -- If not a LineString, check for rings
+      _rings = array[]::geometry[];
+
+      for _i in select st_dumprings(_g) as ring loop
+        _rings = _rings || _gs__cleanangles(st_boundary((_i.ring).geom), _angle);
+      end loop;
+
+      -- If there are rings, construct polygon with holes
+      if array_length(_rings,1)>1 then
+      	_holes = gs__pullfromarray(_rings, 1);
+        _parts = _parts || st_makepolygon(_rings[1], _holes);
+      else
+        -- If no rings, just use the first one as the outer shell
+        _parts = _parts || st_makepolygon(_rings[1]);
+      end if;
+    else
+      -- If a LineString, just clean the part
+      _parts = _parts || _gs__cleanangles(_g, _angle);
+    end if;
+  end loop;
+
+  -- Original type LineString: return the first "part" (and only)
+  if _type='ST_LineString' then
+    _out = _parts[1];
+  end if;
+
+  -- Original type MultiLineString: return a multi of all parts
+  if _type='ST_MultiLineString' then
+    _out = st_collect(_parts);
+  end if;
+
+  -- Original type Polygon: just return the first "part"
+  if _type='ST_Polygon' then
+    _out = _parts[1];
+  end if;
+
+  -- Original type MultiPolygon: return a multi of all parts
+  if _type='ST_MultiPolygon' then
+    _out = st_collect(_parts);
+  end if;
+
+  return _out;
+end;
+$$
+language plpgsql;
+
+
+
+/*
+
+  Clean small angles in linestrings. Angle is in degrees.
+  See gs__cleanangles for a polymorphic version.
+
+*/
+create or replace function public._gs__cleanangles(
   _line geometry,
-  _angle float
-)
-returns geometry as
+  _angle double precision
+) returns geometry as
 $$
 declare
   _i integer;
   _p geometry[];
-  _ang float;
+  _ang double precision;
   _out geometry;
+  _v1 gsv__vector;
+  _v2 gsv__vector;
 begin
   -- Check geometry type
-  
   if st_geometrytype(_line)<>'ST_LineString' then
     return null;
   end if;
 
-  -- Decompose linestring into matrix of points
+  -- Decompose linestring into matrix of points, but checking no same point in sequence
+  _p = array[st_pointn(_line, 1)];
 
-  _p = array[]::geometry[];
-
-  for _i in 1..st_npoints(_line) loop
-    _p = _p || st_pointn(_line, _i);
+  for _i in 2..st_npoints(_line) loop
+    if not st_equals(_p[_i-1], st_pointn(_line, _i)) then  
+      _p = _p || st_pointn(_line, _i);
+    end if;
   end loop;
 
   _i = 1;
 
   while _i<=array_length(_p,1)-1 loop
     -- Check if it is the initial vertex of a closed
-    if _i=1 and _p[1]=_p[array_length(_p,1)] then
-      _ang = gsv__vectorangle(gsv__vectorfrompoints(_p[array_length(_p,1)-1], _p[1]),
-      			      gsv__vectorfrompoints(_p[1], _p[2]));
 
-      if degrees(_ang)<_angle then
+    if _i=1 and _p[1]=_p[array_length(_p,1)] then
+      _v1 = gsv__vectorfrompoints(_p[array_length(_p,1)-1], _p[1]);
+      _v2 = gsv__vectorfrompoints(_p[1], _p[2]);
+
+      -- Detect same point in sequence
+
+      if _v1=(0,0,0)::gsv__vector or _v2=(0,0,0)::gsv__vector then
         _p = gs__pullfromarray(_p, 1);
-	_p = gs__pullfromarray(_p, array_length(_p,1));
-	_p = _p || _p[1];
       else
-        _i = _i+1;
+        _ang = gsv__vectorangle(_v1, _v2);
+        
+        if degrees(_ang)<_angle then
+          _p = gs__pullfromarray(_p, 1);
+          _p = gs__pullfromarray(_p, array_length(_p,1));
+          _p = _p || _p[1];
+        else
+          _i = _i+1;
+	end if;
       end if;
     else
       if _i=1 then 
 	_i = _i+1;
       else
-        _ang = gsv__vectorangle(gsv__vectorfrompoints(_p[_i-1], _p[_i]),
-    			    gsv__vectorfrompoints(_p[_i], _p[_i+1]));
-			    
-        if degrees(_ang)<_angle then
+        _v1 = gsv__vectorfrompoints(_p[_i-1], _p[_i]);
+	_v2 = gsv__vectorfrompoints(_p[_i], _p[_i+1]);
+
+        -- Detect same point in sequence
+  
+        if _v1=(0,0,0)::gsv__vector or _v2=(0,0,0)::gsv__vector then
           _p = gs__pullfromarray(_p, _i);
-	else
-	  _i = _i+1;
+        else
+          _ang = gsv__vectorangle(_v1, _v2);
+
+          if degrees(_ang)<_angle then
+            _p = gs__pullfromarray(_p, _i);
+          else
+	    _i = _i+1;
+	  end if;
 	end if;
       end if;
     end if;
@@ -626,7 +721,7 @@ begin
   return _out;
 end
 $$
-language 'plpgsql';
+language 'plpgsql' volatile;
 
 
 commit;

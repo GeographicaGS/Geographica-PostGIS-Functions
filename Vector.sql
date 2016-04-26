@@ -10,9 +10,9 @@ begin;
 
 create type public.gsv__vector as
 (
-  x numeric,
-  y numeric,
-  z numeric
+  x double precision,
+  y double precision,
+  z double precision
 );
 
 
@@ -64,10 +64,10 @@ create or replace function public.gsv__module
 (
   _v gsv__vector
 )
-returns numeric as
+returns double precision as
 $$
 begin
-  return sqrt((_v.x^2)::numeric+(_v.y^2)::numeric+(_v.z^2)::numeric);
+  return (sqrt((_v.x^2)::double precision+(_v.y^2)::double precision+(_v.z^2)::double precision))::double precision;
 end;
 $$
 language plpgsql;
@@ -137,8 +137,6 @@ create or replace function public.gsv__dotprod
 )
 returns double precision as
 $$
-declare
-  _v gsv__vector;
 begin
   return _v1.x*_v2.x+_v1.y*_v2.y+_v1.z*_v2.z;
 end;
@@ -346,11 +344,26 @@ language 'plpgsql';
 create or replace function public.gsv__vectorangle(
   gsv__vector,
   gsv__vector
-) returns float as
+) returns double precision as
 $$
-  select acos(($1*$2)/(gsv__module($1)*gsv__module($2)));
+declare
+  _v double precision;
+begin
+  _v = (($1*$2)/(gsv__module($1)*gsv__module($2)))::double precision;
+
+  -- Sometimes computations bring the value beyond acos domain of (-1, 1)
+  if _v>1 then
+    _v = 1;
+  end if;
+
+  if _v<-1 then
+    _v = -1;
+  end if;
+  
+  return acos(_v);
+end;
 $$
-language sql;
+language 'plpgsql' volatile;
 
 
 
