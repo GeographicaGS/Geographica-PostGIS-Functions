@@ -664,7 +664,7 @@ begin
   _p = array[st_pointn(_line, 1)];
 
   for _i in 2..st_npoints(_line) loop
-    if not st_equals(_p[_i-1], st_pointn(_line, _i)) then  
+    if not st_equals(_p[array_length(_p, 1)], st_pointn(_line, _i)) then  
       _p = _p || st_pointn(_line, _i);
     end if;
   end loop;
@@ -680,19 +680,19 @@ begin
 
       -- Detect same point in sequence
 
-      if _v1=(0,0,0)::gsv__vector or _v2=(0,0,0)::gsv__vector then
+      -- if _v1=(0,0,0)::gsv__vector or _v2=(0,0,0)::gsv__vector then
+      --   _p = gs__pullfromarray(_p, 1);
+      -- else
+      _ang = gsv__vectorangle(_v1, _v2);
+
+      if degrees(_ang)<_angle then
         _p = gs__pullfromarray(_p, 1);
+        _p = gs__pullfromarray(_p, array_length(_p,1));
+        _p = _p || _p[1];
       else
-        _ang = gsv__vectorangle(_v1, _v2);
-        
-        if degrees(_ang)<_angle then
-          _p = gs__pullfromarray(_p, 1);
-          _p = gs__pullfromarray(_p, array_length(_p,1));
-          _p = _p || _p[1];
-        else
-          _i = _i+1;
-	end if;
+        _i = _i+1;
       end if;
+
     else
       if _i=1 then 
 	_i = _i+1;
