@@ -110,6 +110,33 @@ language plpgsql;
 
 /*
 
+  Combines two bbox as [minx, miny, maxx, maxy].
+
+*/
+create or replace function public.gs__combinebbox(
+  _bbox1 float[],
+  _bbox2 float[]
+) returns float[] as
+$$
+declare
+  _bbox float[4];
+begin
+  -- _bbox[1] = least(_bbox1[1], _bbox2[1]);
+  -- _bbox[2] = least(_bbox1[2], _bbox2[2]);
+  -- _bbox[3] = greatest(_bbox1[3], _bbox2[3]);
+  -- _bbox[4] = greatest(_bbox1[4], _bbox2[4]);
+
+  _bbox = array[least(_bbox1[1], _bbox2[1]), least(_bbox1[2], _bbox2[2]),
+  	        greatest(_bbox1[3], _bbox2[3]), greatest(_bbox1[4], _bbox2[4])]::float[];
+
+  return _bbox;
+end;
+$$
+language plpgsql;
+
+
+/*
+
   Returns a polygonal grid that covers a geometry at a regular step.
 
 */
@@ -159,13 +186,14 @@ end;
 $$
 language plpgsql;
 
+
 /*
 
   This function returns human readable lat / lon output out of a geometry.
   First parameter is the coordinate, the second, a varchar of just 'x' or 'y'.
 
 */
-create or replace function public.gs__degreeminsec(
+pcreate or replace function public.gs__degreeminsec(
   _coord float,
   _xy char(1)
 ) returns varchar as
