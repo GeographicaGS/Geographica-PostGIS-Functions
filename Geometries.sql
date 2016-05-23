@@ -752,4 +752,89 @@ $$
 language 'plpgsql' volatile;
 
 
+
+/*
+
+  Creates a weighted geometric mean from points and weights.
+
+*/
+
+create or replace function public.gs__geometric_mean(
+  _geoms geometry[],
+  _weights double precision[]
+) returns geometry as
+$$
+declare
+  _i integer;
+  _fw double precision[];
+  _x double precision[];
+  _y double precision[];
+  _tx double precision;
+  _ty double precision;
+  _tw double precision;
+  _out geometry;
+begin
+  _fw = array[]::double precision[];
+  _x = array[]::double precision[];
+  _y = array[]::double precision[];
+  _tx = 0;
+  _ty = 0;
+  _tw = 0;
+
+  -- No weights
+  if _weights is null then
+    for i in 1..array_length(_geoms, 1) loop
+      _fw = _fw || 1::double precision;
+    end loop;
+  else
+    _fw = _weights;
+  end if;
+
+  for i in 1..array_length(_geoms, 1) loop
+    if st_geometrytype(_geoms[i]) in ('ST_Polygon', 'ST_MultiPolygon') then
+      _geoms[i] = st_centroid(_geoms[i]);
+    end if;
+    
+    _x = _x || (_fw[i]*st_x(_geoms[i]));
+    _y = _y || (_fw[i]*st_y(_geoms[i]));
+
+  end loop;
+
+  -- Sum of weighted coordinates and weights
+  for i in 1..array_length(_geoms, 1) loop
+    _tx = _tx+_x[i];
+    _ty = _ty+_y[i];
+    _tw = _tw+_fw[i];
+  end loop;
+
+  _out = st_makepoint(_tx/_tw, _ty/_tw);
+
+  return _out;
+end;
+$$
+language plpgsql;
+
+
+/*
+
+  Creates a geometric mean.
+
+*/
+
+create or replace function public.gs__geometric_mean(
+  _geoms geometry[]
+) returns geometry as
+$$
+declare
+  _out geometry;
+begin
+  _out = gs__geometric_mean(_geoms, null);
+
+  return _out
+end;
+$$
+language plpgsql;
+
+
+
 commit;
