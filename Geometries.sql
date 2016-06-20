@@ -193,7 +193,7 @@ language plpgsql;
   First parameter is the coordinate, the second, a varchar of just 'x' or 'y'.
 
 */
-pcreate or replace function public.gs__degreeminsec(
+create or replace function public.gs__degreeminsec(
   _coord float,
   _xy char(1)
 ) returns varchar as
@@ -817,7 +817,7 @@ language plpgsql;
 
 /*
 
-  Creates a geometric mean.
+  Creates a geometric mean with evenly weighted points.
 
 */
 
@@ -830,11 +830,39 @@ declare
 begin
   _out = gs__geometric_mean(_geoms, null);
 
-  return _out
+  return _out;
 end;
 $$
 language plpgsql;
 
+
+
+/*
+
+  This aggregate dumps a multigeometry and re-st_collect them to avoid geometrycollections from 
+  st_collect of multi geometries.
+
+*/
+
+create or replace function gs__recollect(geometry, geometry)
+returns geometry as
+$$
+  select st_collect(a.geom)
+  from (
+    select (st_dump($1)).geom
+    union
+    select (st_dump($2)).geom) a;
+$$
+language sql strict;
+
+drop aggregate if exists gs__recollect(geometry);
+
+create aggregate gs__recollect(geometry)
+(
+  sfunc = gs__recollect,
+  stype = geometry
+);
+    
 
 
 commit;
