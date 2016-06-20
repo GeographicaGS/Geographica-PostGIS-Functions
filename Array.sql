@@ -517,4 +517,24 @@ $$
 language plpgsql;
 
 
+
+-- Aggregate for linking arrays
+
+create or replace function gs__addarrays(anyarray, anyarray)
+returns anyarray as
+$$
+  select $1 || $2;
+$$
+language sql strict;
+
+drop aggregate if exists gs__addarrays(anyarray);
+
+create aggregate gs__addarrays(anyarray)
+(
+  sfunc = gs__addarrays,
+  stype = anyarray,
+  initcond = '{}'
+);
+
+
 commit;
