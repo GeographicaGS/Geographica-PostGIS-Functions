@@ -161,13 +161,13 @@ create type gs__tokenizer as(
 
 /*
 
-  This is the tokenizer.
+  This is the tokenizer. Usually it is used wrapped inside another function that provides tokens and replace token.
 
   :param _str: String to be tokenized.
   :type _str: varchar
   :param _tokens: Array of tokens, in order of precedence.
   :type _tokens: varchar[]
-  :param _rtoken: Token used as a replacement for identified tokens.
+  :param _rtoken: Token used as a replacement for identified tokens. Should be something that is not a target token nor something that has somehow sense in the residue string.
   :type _rtoken: varchar
   :return type: gs__tokenizer
 
