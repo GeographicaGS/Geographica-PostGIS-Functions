@@ -537,4 +537,37 @@ create aggregate gs__addarrays(anyarray)
 );
 
 
+
+/*
+
+  Changes all occurences of an element in an array by another one.
+
+*/
+
+create or replace function gs__replacearray(
+  _array anyarray,
+  _oldelement anyelement,
+  _newelement anyelement
+) returns anyarray as
+$$
+declare
+  _i integer;
+begin
+
+  for _i in 1..array_length(_array, 1) loop
+    raise warning '%', _array[_i];
+
+    if _array[_i]=_oldelement then
+      _array[_i]=_newelement;
+    end if;
+  end loop;
+
+  return _array;
+
+end;
+$$
+language plpgsql;
+
+
+
 commit;
