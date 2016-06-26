@@ -457,6 +457,37 @@ language plpgsql;
 
 
 
+/*
+
+  Returns an array with repeated elements deleted. double precision variant.
+
+*/
+create or replace function public.gs__uniquearray(
+  _a double precision[]
+) returns double precision[] as
+$$
+declare
+  _out double precision[];
+  _s double precision;
+begin
+  if _a is null then
+    return null;
+  end if;
+
+  _out = array[]::double precision[];
+
+  foreach _s in array _a loop
+    if not array[_s]::double precision[] <@ _out then
+      _out = _out || _s;
+    end if;
+  end loop;
+
+  return _out;
+end;
+$$
+language plpgsql;
+
+
 
 -- Orders an array, varchar variant
 

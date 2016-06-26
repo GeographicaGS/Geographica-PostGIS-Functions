@@ -758,7 +758,6 @@ language 'plpgsql' volatile;
   Creates a weighted geometric mean from points and weights.
 
 */
-
 create or replace function public.gs__geometric_mean(
   _geoms geometry[],
   _weights double precision[]
@@ -773,6 +772,7 @@ declare
   _ty double precision;
   _tw double precision;
   _out geometry;
+  _ttw double precision[];
 begin
   _fw = array[]::double precision[];
   _x = array[]::double precision[];
@@ -780,6 +780,16 @@ begin
   _tx = 0;
   _ty = 0;
   _tw = 0;
+
+  -- Check if _weights are all 0 or nulls
+  _ttw = gs__uniquearray(_weights);
+
+  if _ttw=array[0]::double precision[] or
+     _ttw=array[0, null]::double precision[] or
+     _ttw=array[null, 0]::double precision[] or
+     _ttw=array[null]::double precision[] then
+     return null;
+  end if;
 
   -- No weights
   if _weights is null then
@@ -813,6 +823,7 @@ begin
 end;
 $$
 language plpgsql;
+
 
 
 /*
