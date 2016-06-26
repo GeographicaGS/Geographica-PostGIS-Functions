@@ -568,4 +568,32 @@ language plpgsql;
 
 
 
+/*
+
+  Returns all indices where an element is null.
+
+*/
+create or replace function gs__elementnulls(
+  _array anyarray
+) returns integer[] as
+$$
+declare
+  _i integer;
+  _o integer[];
+begin
+  _o = array[]::integer[];
+
+  for _i in 1..array_length(_array,1) loop
+    if _array[_i] is null then
+      _o = _o || _i;
+    end if;
+  end loop;
+
+  return _o;
+end;
+$$
+language plpgsql;
+
+
+
 commit;
