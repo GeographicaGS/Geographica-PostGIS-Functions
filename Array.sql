@@ -555,8 +555,6 @@ declare
 begin
 
   for _i in 1..array_length(_array, 1) loop
-    raise warning '%', _array[_i];
-
     if _array[_i]=_oldelement then
       _array[_i]=_newelement;
     end if;
