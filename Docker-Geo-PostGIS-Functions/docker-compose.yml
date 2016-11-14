@@ -1,0 +1,13 @@
+postgis:
+  image: geographica/postgis:breezy_badger
+
+  ports:
+    - "5435:5432"
+
+  volumes:
+    - /Users/git/Geographica-PostGIS-Functions/:/src/
+
+  environment:
+    LOCALE: es_ES
+    PG_CONF: max_connections=100#listen_addresses='*'#shared_buffers=2048MB#dynamic_shared_memory_type=posix#log_timezone='UTC'#datestyle='iso, dmy'#timezone='UTC'
+    PG_HBA: "local all all trust#host all all 127.0.0.1/32 trust#host all all 0.0.0.0/0 trust#host all all ::1/128 trust"

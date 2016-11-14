@@ -876,4 +876,52 @@ create aggregate gs__recollect(geometry)
     
 
 
+/*
+
+  Generates random points inside a polygon
+
+*/
+
+create or replace function public.gs__randompointsinpoly(
+  _poly geometry,
+  _npoints integer
+) returns setof geometry as
+$$
+declare
+  _xmin double precision;
+  _ymin double precision;
+  _xmax double precision;
+  _ymax double precision;
+  _srid integer;
+  _point geometry;
+begin
+
+  -- Get dimensions
+  _xmin = st_xmin(_poly);
+  _ymin = st_ymin(_poly);
+  _xmax = st_xmax(_poly);
+  _ymax = st_ymax(_poly);
+  _srid = st_srid(_poly);
+
+  -- Generate points
+  while _npoints>0 loop
+    _point = st_setsrid(st_makepoint(
+      (_xmin+(random()*(_xmax-_xmin))),
+      (_ymin+(random()*(_ymax-_ymin)))), _srid);
+
+    if st_contains(_poly, _point) then
+      _npoints = _npoints-1;
+      return next _point;
+    end if;
+  end loop;
+      
+end;
+$$
+language plpgsql;
+
+comment on function public.gs__randompointsinpoly(geometry, integer) is
+'Generates random points inside a polygon.';
+
+
+
 commit;
