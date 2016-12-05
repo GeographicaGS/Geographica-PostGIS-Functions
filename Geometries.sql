@@ -924,4 +924,50 @@ comment on function public.gs__randompointsinpoly(geometry, integer) is
 
 
 
+/*
+ 
+  Returns all LineStrings that makes up the 
+  outer perimeter of a ST_Polygon (will not work with ST_MultiPolygon).
+
+*/
+
+create or replace function gs__getperimeterlines(
+  _poly geometry
+) returns setof geometry as
+$$
+declare
+  _sql text;
+  _ext geometry;
+  _i integer;
+begin
+
+  _ext = st_exteriorring(_poly);
+
+  for _i in 1..st_npoints(_ext)-1 loop
+    return next st_makeline(st_pointn(_ext, _i), st_pointn(_ext, _i+1));
+  end loop;
+
+end;
+$$
+language plpgsql;
+
+
+
+/*
+
+  Returns the center point of a linestring.
+
+*/
+
+create or replace function gs__getmidpoint(
+  _line geometry
+) returns geometry as
+$$
+
+  select st_lineinterpolatepoint(_line, .5);
+
+$$
+language sql;
+
+
 commit;

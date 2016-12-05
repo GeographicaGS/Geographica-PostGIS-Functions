@@ -626,5 +626,62 @@ $$
 language plpgsql;
 
 
+/*
+
+  Returns the index of the max value in a double array.
+
+*/
+create or replace function gs__arraymaxindex(
+  _array double precision[]
+) returns integer as
+$$
+declare
+  _i integer;
+  _out integer;
+begin
+
+  _out = 1;
+
+  for _i in 2..array_length(_array, 1) loop
+    if _array[_i]>_array[_out] then
+      _out = _i;
+    end if;
+  end loop;
+
+  return _out;
+
+end;
+$$
+language plpgsql;
+
+
+/*
+
+  Returns the index of the min value in a double array.
+
+*/
+create or replace function gs__arrayminindex(
+  _array double precision[]
+) returns integer as
+$$
+declare
+  _i integer;
+  _out integer;
+begin
+
+  _out = 1;
+
+  for _i in 2..array_length(_array, 1) loop
+    if _array[_i]<_array[_out] then
+      _out = _i;
+    end if;
+  end loop;
+
+  return _out;
+
+end;
+$$
+language plpgsql;
+
 
 commit;
