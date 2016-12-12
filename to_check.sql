@@ -202,3 +202,123 @@ begin
 end;
 $$
 language plpgsql;
+
+
+
+
+
+
+
+-- Splits segments on roughly equal parts
+
+create or replace function tempo__split(
+  _line geometry,
+  _length double precision
+) returns setof geometry as
+$$
+declare
+  _sql text;
+  _geom geometry;
+  _nsegments integer;
+  _finallength double precision;
+  _n integer;
+  _g geometry;
+  _p0 double precision;
+  _p1 double precision;  
+begin
+
+  _geom = st_transform(_line, 25830);
+  _nsegments = floor(st_length(_geom)/_length)+1;
+  _finallength = st_length(_geom)/_nsegments;
+
+  for _n in 0.._nsegments-1 loop
+    _p0 = (_n*_finallength)/st_length(_geom);
+    _p1 = ((_n+1)*_finallength)/st_length(_geom);
+    _g = st_linesubstring(_line, _p0, _p1);
+    
+    return next _g;
+  end loop;
+
+end;
+$$
+language plpgsql;
+
+
+/*
+ 
+  Returns all LineStrings that makes up the 
+  outer perimeter of a ST_Polygon (will not work with ST_MultiPolygon).
+
+*/
+
+create or replace function gs__getperimeterlines(
+  _poly geometry
+) returns setof geometry as
+$$
+declare
+  _sql text;
+  _ext geometry;
+  _i integer;
+begin
+
+  _ext = st_exteriorring(_poly);
+
+  for _i in 1..st_npoints(_ext)-1 loop
+    return next st_makeline(st_pointn(_ext, _i), st_pointn(_ext, _i+1));
+  end loop;
+
+end;
+$$
+language plpgsql;
+
+
+/*
+
+  Returns the center point of a linestring.
+
+*/
+
+create or replace function gs__getmidpoint(
+  _line geometry
+) returns geometry as
+$$
+
+  select st_lineinterpolatepoint(_line, .5);
+
+$$
+language sql;
+
+
+/*
+
+  Returns the index of the min value in a double array.
+
+*/
+create or replace function gs__arrayminindex(
+  _array double precision[]
+) returns integer as
+$$
+declare
+  _i integer;
+  _out integer;
+begin
+
+  _out = 1;
+
+  for _i in 2..array_length(_array, 1) loop
+    if _array[_i]<_array[_out] then
+      _out = _i;
+    end if;
+  end loop;
+
+  return _out;
+
+end;
+$$
+language plpgsql;
+
+
+
+
+
+
